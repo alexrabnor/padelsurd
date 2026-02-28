@@ -157,33 +157,6 @@
       background: var(--border);
     }
 
-    .google-btn {
-      width: 100%;
-      padding: 11px;
-      border-radius: 9px;
-      background: var(--surface2);
-      border: 1px solid var(--border2);
-      color: var(--text);
-      font-family: 'Outfit', sans-serif;
-      font-size: 13.5px;
-      font-weight: 600;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 10px;
-      transition: all 0.15s;
-    }
-
-    .google-btn:hover {
-      border-color: var(--muted);
-      background: var(--surface3);
-    }
-
-    .google-icon {
-      font-size: 18px;
-    }
-
     .auth-err {
       background: rgba(224, 85, 85, 0.1);
       border: 1px solid rgba(224, 85, 85, 0.3);
@@ -2087,13 +2060,6 @@
         <button class="auth-tab" onclick="switchAuthTab('register',this)">Skapa konto</button>
       </div>
 
-      <!-- Google -->
-      <button class="google-btn" onclick="googleLogin()">
-        <span class="google-icon">G</span> Fortsätt med Google
-      </button>
-
-      <div class="auth-divider"><span>eller med e-post</span></div>
-
       <!-- Error -->
       <div class="auth-err" id="auth-err"></div>
 
@@ -3485,35 +3451,6 @@
       loginSuccess(user);
       showToast('Välkommen till IK Surd, ' + fn + '! 🎾', 'Konto skapat');
     }
-    async function googleLogin() {
-      if (useSupabase && supabaseDB) {
-        try {
-          const redirectUrl = window.location.origin + window.location.pathname;
-          const { data, error } = await supabaseDB.auth.signInWithOAuth({
-            provider: 'google',
-            options: { redirectTo: redirectUrl }
-          });
-          if (error) { showAuthErr(error.message || 'Google-inloggning misslyckades.'); return; }
-          if (data?.url) window.location.href = data.url;
-        } catch (e) { showAuthErr('Google-fel: ' + (e.message || e)); }
-
-        const { data: { session } } = await supabaseDB.auth.getSession();
-        if (session) {
-          const user = {
-            id: session.user.id,
-            name: session.user.user_metadata?.full_name || session.user.user_metadata?.name || session.user.email,
-            email: session.user.email,
-            level: '1',
-            google: true
-          };
-          saveSession(user);
-          loginSuccess(user);
-          showToast('Inloggad via Google! Välkommen 👋', 'Google');
-          return;
-        }
-      }
-    }
-
     function doReset() {
       const email = document.getElementById('reset-email').value.trim();
       if (!email) { showAuthErr('Ange din e-postadress.'); return; }
