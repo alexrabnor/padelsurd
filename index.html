@@ -3314,6 +3314,7 @@
         console.log('IK Surd Padel: Ansluten till Supabase');
       } catch (e) { console.warn('Supabase init fel:', e); }
     }
+    console.log('Supabase init:', { useSupabase, supabaseDB, SUPABASE_URL: window.SUPABASE_URL, SUPABASE_ANON_KEY: window.SUPABASE_ANON_KEY ? window.SUPABASE_ANON_KEY.slice(0, 20) + '...' : window.SUPABASE_ANON_KEY });
 
     // ── AUTH ──────────────────────────────────────
     let currentUser = null;
@@ -3451,9 +3452,24 @@
       loginSuccess(user);
       showToast('Välkommen till IK Surd, ' + fn + '! 🎾', 'Konto skapat');
     }
-    function doReset() {
+    async function doReset() {
       const email = document.getElementById('reset-email').value.trim();
       if (!email) { showAuthErr('Ange din e-postadress.'); return; }
+      if (useSupabase && supabaseDB) {
+        try {
+          const redirectTo = window.location.origin + window.location.pathname;
+          const { data, error } = await supabaseDB.auth.resetPasswordForEmail(email, { redirectTo });
+          if (error) {
+            showAuthErr(error.message || 'Kunde inte skicka återställningslänk.');
+            return;
+          }
+          showReset(false);
+          showToast('Kolla din e-post – vi skickade en återställningslänk till ' + email, 'Lösenordsåterställning');
+        } catch (e) {
+          showAuthErr('Fel: ' + (e.message || e));
+        }
+        return;
+      }
       showReset(false);
       showToast('Återställningslänk skickad till ' + email, 'Lösenordsåterställning');
     }
