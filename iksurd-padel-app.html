@@ -1025,11 +1025,11 @@ function saveSession(u) { localStorage.setItem(SESSION_KEY, JSON.stringify(u)); 
 function clearSession() { localStorage.removeItem(SESSION_KEY); }
 
 // ── SUPABASE ───────────────────────────────────
-let supabase = null;
+let supabaseDB = null;
 let useSupabase = false;
 if (typeof window !== 'undefined' && window.SUPABASE_URL && window.SUPABASE_ANON_KEY && !window.SUPABASE_URL.includes('xxxx')) {
   try {
-    supabase = window.supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY);
+    supabaseDB = window.supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY);
     useSupabase = true;
     console.log('IK Surd Padel: Ansluten till Supabase');
   } catch (e) { console.warn('Supabase init fel:', e); }
@@ -1039,8 +1039,8 @@ if (typeof window !== 'undefined' && window.SUPABASE_URL && window.SUPABASE_ANON
 let currentUser = null;
 
 function init() {
-  if (useSupabase && supabase) {
-    supabase.auth.getSession().then(({ data: { session } }) => {
+  if (useSupabase && supabaseDB) {
+    supabaseDB.auth.getSession().then(({ data: { session } }) => {
       if (session) {
         loadProfileAndLogin(session.user);
       } else {
@@ -1049,7 +1049,7 @@ function init() {
       }
       setupPartnerForm();
     });
-    supabase.auth.onAuthStateChange((_event, session) => {
+    supabaseDB.auth.onAuthStateChange((_event, session) => {
       if (session) loadProfileAndLogin(session.user);
       else { currentUser = null; document.getElementById('auth-screen').classList.remove('hidden'); document.getElementById('app-shell').classList.add('visible'); }
     });
@@ -1062,8 +1062,8 @@ function init() {
 
 async function loadProfileAndLogin(user) {
   let profile = null;
-  if (supabase) {
-    const { data } = await supabase.from('profiles').select('*').eq('id', user.id).single();
+  if (supabaseDB) {
+    const { data } = await supabaseDB.from('profiles').select('*').eq('id', user.id).single();
     profile = data;
   }
   const u = {
@@ -1118,9 +1118,9 @@ async function doLogin() {
   const email = document.getElementById('login-email').value.trim();
   const pw = document.getElementById('login-pw').value;
   if (!email || !pw) { showAuthErr('Fyll i e-post och lösenord.'); return; }
-  if (useSupabase && supabase) {
+  if (useSupabase && supabaseDB) {
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({ email, password: pw });
+      const { data, error } = await supabaseDB.auth.signInWithPassword({ email, password: pw });
       if (error) { showAuthErr(error.message || 'Fel e-post eller lösenord.'); return; }
       loadProfileAndLogin(data.user);
       showToast('Välkommen tillbaka! 🎾', 'Inloggad');
@@ -1142,16 +1142,16 @@ async function doRegister() {
   const level = document.getElementById('reg-level').value;
   if (!fn || !ln || !email || !pw) { showAuthErr('Fyll i alla fält.'); return; }
   if (pw.length < 6) { showAuthErr('Lösenordet måste vara minst 6 tecken.'); return; }
-  if (useSupabase && supabase) {
+  if (useSupabase && supabaseDB) {
     try {
       const lvNum = level ? parseInt(level.split(' ')[0]) || null : null;
-      const { data, error } = await supabase.auth.signUp({
+      const { data, error } = await supabaseDB.auth.signUp({
         email, password: pw,
         options: { data: { full_name: fn + ' ' + ln, level: lvNum } }
       });
       if (error) { showAuthErr(error.message || 'Registrering misslyckades.'); return; }
       if (data.user) {
-        const { error: upErr } = await supabase.from('profiles').update({
+        const { error: upErr } = await supabaseDB.from('profiles').update({
           full_name: fn + ' ' + ln, level: lvNum
         }).eq('id', data.user.id);
         if (upErr) console.warn('Profiluppdatering:', upErr);
@@ -1173,10 +1173,10 @@ async function doRegister() {
 }
 
 async function googleLogin() {
-  if (useSupabase && supabase) {
+  if (useSupabase && supabaseDB) {
     try {
       const redirectUrl = window.location.origin + window.location.pathname;
-      const { data, error } = await supabase.auth.signInWithOAuth({
+      const { data, error } = await supabaseDB.auth.signInWithOAuth({
         provider: 'google',
         options: { redirectTo: redirectUrl }
       });
@@ -1205,7 +1205,7 @@ function showReset(show = true) {
 }
 
 async function doLogout() {
-  if (useSupabase && supabase) await supabase.auth.signOut();
+  if (useSupabase && supabaseDB) await supabaseDB.auth.signOut();
   clearSession();
   currentUser = null;
   document.getElementById('auth-screen').classList.remove('hidden');
@@ -1413,7 +1413,7 @@ let listings = [
 async function loadPartnerMatches() {
   if (!useSupabase || !supabase) return;
   try {
-    const { data, error } = await supabase.from('partner_matches').select('id, match_type, level_min, level_max, duration_minutes, scheduled_at, location, message, creator:profiles!creator_id(full_name)').eq('is_open', true).order('created_at', { ascending: false });
+    const { data, error } = await supabaseDB.from('partner_matches').select('id, match_type, level_min, level_max, duration_minutes, scheduled_at, location, message, creator:profiles!creator_id(full_name)').eq('is_open', true).order('created_at', { ascending: false });
     if (error) throw error;
     if (data && data.length) {
       listings = data.map(m => {
@@ -1528,16 +1528,16 @@ async function submitMatch() {
   const initials = currentUser ? (currentUser.name||'U').split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2) : 'AS';
   const name = currentUser ? (currentUser.name||currentUser.email) : 'Du';
   let nl = { id: Date.now(), name, ini: initials, type, tl, lvMin: lo, lvMax: hi, dur, date: df, time, loc, msg };
-  if (useSupabase && supabase && currentUser?.id) {
+  if (useSupabase && supabaseDB && currentUser?.id) {
     try {
       const scheduledAt = (date && time) ? new Date(date + 'T' + time).toISOString() : null;
-      const { data, error } = await supabase.from('partner_matches').insert({
+      const { data, error } = await supabaseDB.from('partner_matches').insert({
         creator_id: currentUser.id, match_type: type, level_min: lo, level_max: hi,
         duration_minutes: dur, scheduled_at: scheduledAt, location: loc, message: msg || null, is_open: true
       }).select('id').single();
       if (error) throw error;
       nl.id = data.id;
-      await supabase.from('partner_match_participants').insert({ match_id: data.id, user_id: currentUser.id, status: 'accepted' });
+      await supabaseDB.from('partner_match_participants').insert({ match_id: data.id, user_id: currentUser.id, status: 'accepted' });
     } catch (e) { showToast('Kunde inte spara match: ' + (e.message||e), 'Fel'); return; }
   }
   listings.unshift(nl);
@@ -1740,9 +1740,9 @@ contactMatch = function(name, btn, listing) {
 
 
 async function contactMatchWithBooking(listing, btn) {
-  if (useSupabase && supabase && currentUser?.id && typeof listing.id === 'string') {
+  if (useSupabase && supabaseDB && currentUser?.id && typeof listing.id === 'string') {
     try {
-      const { error } = await supabase.from('partner_match_participants').upsert({ match_id: listing.id, user_id: currentUser.id, status: 'accepted' }, { onConflict: 'match_id,user_id' });
+      const { error } = await supabaseDB.from('partner_match_participants').upsert({ match_id: listing.id, user_id: currentUser.id, status: 'accepted' }, { onConflict: 'match_id,user_id' });
       if (error) throw error;
     } catch (e) { showToast('Kunde inte anmäla: ' + (e.message||e), 'Fel'); return; }
   }

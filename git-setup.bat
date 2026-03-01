@@ -26,7 +26,7 @@ set REPO_NAME=iksurd-padel
 
 echo.
 echo  Kopplar till GitHub...
-git remote add origin https://github.com/%GITHUB_USER%/%REPO_NAME%.git
+git remote add origin https://github.com/alexrabnor/padelsurd.git
 
 :: Pusha till main
 git push -u origin main
