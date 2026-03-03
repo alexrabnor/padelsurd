@@ -1,0 +1,22 @@
+{
+  "name": "IK Surd Padel",
+  "short_name": "IK Surd",
+  "description": "Padel Sektionen — IK Surd",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#06090f",
+  "theme_color": "#c9a84c",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "surd-logo.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "surd-logo.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
